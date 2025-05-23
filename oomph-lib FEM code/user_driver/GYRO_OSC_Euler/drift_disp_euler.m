@@ -9,7 +9,6 @@
 % data recorded by postprocess_euler.m
 
 clearvars;
-cd('./FINALDATA/')
 RESstruct=natsortfiles(dir('PP*Wo*.mat')); % Find files with the matching names
 RESlength=length(RESstruct); % Number of .mat files.
 Wos=[0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.15 0.25 0.35 0.45 0.55 0.95 1 1.1 1.2 1.05 1.5];
