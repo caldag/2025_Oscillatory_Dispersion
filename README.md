@@ -9,7 +9,7 @@ This study investigates the dispersion of gyrotactic particles in upwelling-down
 
 We have carried out two types of simulations:
 - Lagrangian simulation (runs on Matlab) solves for individual particle trajectories.
-- Eulerian simulation (relies on [oomph-lib]([url](https://github.com/oomph-lib/oomph-lib)), a finite-element library) solves for the concentration field.
+- Eulerian simulation (relies on [oomph-lib](https://github.com/oomph-lib/oomph-lib), a finite-element library) solves for the concentration field.
 
 There are two folders, each containing codes for these different descriptions.
 
