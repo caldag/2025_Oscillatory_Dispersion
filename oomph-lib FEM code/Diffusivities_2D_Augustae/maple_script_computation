@@ -1,0 +1,445 @@
+# Part of the supplementary material for:
+
+# Caldag, H.O. & Bees, M.A. Fine-tuning the dispersion of active suspensions using oscillatory flows.
+
+# New Fourier expansion for 2D
+
+# Taylor Dispersion problem.  This generates the FP and B field output, 
+# then computes the diffusivity.
+
+# 3rd Dec 2024. M A Bees.  
+# 13th Dec 2024 - debugged version to compute f and B fields
+# Jan 2025 Compute diffusion tensor
+# Feb 2025 - debug
+
+#restart;
+#with(plots); with(plottools);
+
+# TYPE: restart; read 'T2D3';
+
+la :=22/10:
+
+truncorder:= 5;
+Border := 4;
+
+
+### START LOOP
+for torder from 2 to truncorder do
+
+print(`torder = `+torder);
+
+############## EQUATIONS
+
+`Fokker-Planck Equation for k=1 is different`:
+
+eqc1:=  lambda*B(0)-lambda*B(2)/2 + (sigma*A(1)-B(1)):
+eqs1:=             -lambda*A(2)/2 - (sigma*B(1)+A(1)):
+
+
+`Fokker-Planck Equation k>1`:
+
+for k from 2 to torder do
+	eqc||k:=  (lambda/2)*(-B(k+1)+B(k-1)) + (sigma*A(k)-k*B(k)):
+	eqs||k:=  (lambda/2)*(-A(k+1)+A(k-1)) - (sigma*B(k)+k*A(k)):
+od:
+
+############## PUT THEM TOGETHER
+
+B(0):=1/(2*Pi):
+B0||torder  := B(0):
+A0||torder  := 0:
+
+eqlist:= {seq(eqc||k=0,k=1..torder),seq(eqs||k=0,k=1..torder)}:
+parlist:= {seq(A(k),k=1..torder),seq(B(k),k=1..torder)}:
+
+### truncate
+eqlist2:= subs({A(torder+1)=0,B(torder+1)=0},eqlist):
+
+
+############## SOLUTION
+
+print(`Solving equations`);
+sols:=(solve(eqlist2,parlist));
+
+
+############## IDENTIFY INDIVIDUAL COEF
+
+for k from 1 to torder  do
+	A||k||torder := subs(sols,A(k)):
+	B||k||torder :=	subs(sols,B(k)):	
+od:
+
+tt := torder+1:   A||tt||torder := 0:   B||tt||torder := 0: 
+tt2 := torder+2:   A||tt2||torder := 0:   B||tt2||torder := 0: 
+
+A1||torder;
+B1||torder;
+
+
+############## OUTPUT
+
+#fname:= "outputTDFP2D"||torder||".m";
+
+### END TORDER LOOP
+od;
+printf("A1 is q_y/pi and B1 is q_x/pi");
+
+############## PLOT
+
+tleg := seq(n,n=2..truncorder):
+tleg1 :=[tleg]:
+tleg2 := [b1||tleg,a1||tleg]:
+plot([seq(subs(lambda=la,B1||tord),tord=tleg1),seq(subs(lambda=la,A1||tord),tord=tleg1) ],sigma=-10..10, legend=tleg2);
+#print('A12'=A12);
+#print('A13'=A13);
+#print('B12'=B12);
+#print('B13'=B13);
+
+
+
+#####################################################################################
+#####################################################################################
+#####################################################################################
+
+`---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------`;
+
+###### b vector field
+# B_2 field
+
+`Solve for B_2 field`;
+torder:=truncorder; 
+print(`Border = `+Border);
+
+############## EQUATIONS
+
+`B_2 field equation for k=1 is different`;
+
+B2eqc1:=  -(lambda/2) *beta2(2) + (sigma*alpha2(1) -beta2(1)) - ( (Pi*A1||torder)*B1||torder - (1/2)*(A2||torder)  ):
+B2eqs1:=  -(lambda/2)*alpha2(2) - (sigma *beta2(1)+alpha2(1)) - ( (Pi*A1||torder)*A1||torder - (1/2)*(2*B0||torder - B2||torder)  ):
+
+
+`B_2 field equation k>1`;
+
+for k from 2 to Border do
+	kp:=k+1: km:=k-1:
+	B2eqc||k:= k*( (lambda/2)*( -beta2(kp) +beta2(km))+(sigma*alpha2(k)- k* beta2(k)) ) - ( (Pi*A1||torder)*B||k||torder - (1/2)*(A||kp||torder - A||km||torder) ):
+	B2eqs||k:= k*( (lambda/2)*(-alpha2(kp)+alpha2(km))-(sigma *beta2(k)+ k*alpha2(k)) ) - ( (Pi*A1||torder)*A||k||torder - (1/2)*(B||km||torder - B||kp||torder) ):
+od:
+
+############## PUT THEM TOGETHER
+
+beta2(0):=0:
+beta20||Border  := beta2(0):
+alpha2(0):=0:
+alpha20||Border := alpha2(0):
+
+B2eqlist:= {seq(B2eqc||k=0,k=1..Border),seq(B2eqs||k=0,k=1..Border)}:
+
+B2parlist:= {seq(alpha2(k),k=1..Border),seq(beta2(k),k=1..Border)}:
+
+### truncate
+B2eqlist2:= subs({alpha2(Border+1)=0,beta2(Border+1)=0},B2eqlist):
+
+
+############## SOLUTION
+
+print(`Solving equations`);
+
+sols:=(solve(B2eqlist2,B2parlist)):
+
+
+############## IDENTIFY INDIVIDUAL COEF
+
+for k from 1 to Border  do
+	alpha2||k||Border := subs(sols,alpha2(k)):
+	 beta2||k||Border := subs(sols, beta2(k)):	
+od:
+
+alpha21||Border:
+beta21||Border:
+
+
+############## PLOT
+
+B2leg := [`beta21`,`alpha21`]:
+print(`B order`,Border);
+plot([subs(lambda=la,beta21||Border),subs(lambda=la,alpha21||Border)],legend=B2leg);
+
+print('D22/pi=alpha21'=alpha21||Border);
+print('beta21'=beta21||Border);
+
+#####################################################################################
+#####################################################################################
+
+
+
+
+`---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------`;
+
+# B_1 field
+`Solve B_1 field, which depends on B_2`;
+
+############## EQUATIONS
+
+#B2eqc1:=  -(lambda/2) *beta2(2) + (sigma*alpha2(1) -beta2(1))                           - ( ( Pi*A1||torder)*B1||torder - (1/2)*(A2||torder)  );
+#B2eqs1:=  -(lambda/2)*alpha2(2) - (sigma *beta2(1)+alpha2(1))                           - ( ( Pi*A1||torder)*A1||torder - (1/2)*(2*B0||torder - B2||torder)  );
+#	B2eqc||k:= k*( (lambda/2)*( -beta2(kp) +beta2(km))+(sigma*alpha2(k)- k* beta2(k)) )                               - ( ( Pi*A1||torder)*B||k||torder - (1/2)*(A||kp||torder - A||km||torder) );
+#	B2eqs||k:= k*( (lambda/2)*(-alpha2(kp)+alpha2(km))-(sigma *beta2(k)+ k*alpha2(k)) )                               - ( ( Pi*A1||torder)*A||k||torder - (1/2)*(B||km||torder - B||kp||torder) );
+
+`B_1 field equation for k=1 is different`;
+
+B1eqc1:=  -(lambda/2) *beta1(2) + (sigma*alpha1(1) -beta1(1)) -(2*sigma *beta21||Border) - ( (-Pi*B1||torder)*B1||torder + (1/2)* (2*B0||torder + B2||torder)  ):
+B1eqs1:=  -(lambda/2)*alpha1(2) - (sigma *beta1(1)+alpha1(1)) -(2*sigma*alpha21||Border) - ( (-Pi*B1||torder)*A1||torder + (1/2)* (A2||torder)  ):
+
+
+`B_1 field equation k>1`;
+
+for k from 2 to Border do
+	kp:=k+1: km:=k-1:
+	B1eqc||k:=  k*( (lambda/2)*( -beta1(kp) +beta1(km))+(sigma*alpha1(k)- k *beta1(k)) ) -(2*sigma *beta2||k||Border) - ( (-Pi*B1||torder)*B||k||torder + (1/2)*(B||km||torder + B||kp||torder) ):
+	B1eqs||k:=  k*( (lambda/2)*(-alpha1(kp)+alpha1(km))-(sigma *beta1(k)+ k*alpha1(k)) ) -(2*sigma*alpha2||k||Border) - ( (-Pi*B1||torder)*A||k||torder + (1/2)*(A||km||torder + A||kp||torder) ):
+od:
+
+############## PUT THEM TOGETHER
+
+beta1(0):=0:
+beta10||Border  := beta1(0):
+alpha1(0):=0:
+alpha10||Border := alpha1(0):
+
+B1eqlist:= {seq(B1eqc||k=0,k=1..Border),seq(B1eqs||k=0,k=1..Border)}:
+
+B1parlist:= {seq(alpha1(k),k=1..Border),seq(beta1(k),k=1..Border)}:
+
+### truncate
+B1eqlist2:= subs({alpha1(Border+1)=0,beta1(Border+1)=0,alpha2(Border+1)=0,beta2(Border+1)=0},B1eqlist):
+
+
+############## SOLUTION
+
+print(`Solving equations`);
+
+sols:=(solve(B1eqlist2,B1parlist)):
+
+
+############## IDENTIFY INDIVIDUAL COEF
+
+for k from 1 to Border  do
+	alpha1||k||Border := subs(sols,alpha1(k)):
+	 beta1||k||Border := subs(sols, beta1(k)):	
+od:
+
+alpha11||Border:
+beta11||Border:
+
+
+############## PLOT
+
+B1leg := [`beta11`,`alpha11`]:
+print(`B order`,Border);
+plot([subs(lambda=la,beta11||Border),subs(lambda=la,alpha11||Border)],legend=B1leg);
+
+print('alpha11'=alpha11||Border);
+print('-D11/pi=beta11'=beta11||Border);
+
+#####################################################################################
+#####################################################################################
+#####################################################################################
+
+# DIFFUSION TENSOR
+`---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------`;
+`DIFFUSION TENSOR`;
+
+
+lambda := la;      # set lambda for the first time
+
+# Dtilde
+Dt11||Border := -Pi* beta11||Border:
+Dt22||Border :=  Pi*alpha21||Border:
+Dt12||Border := (Pi/2)*(alpha11||Border - beta21||Border):
+
+# Approximation to f
+ff := proc(theta)  local kk,s;
+s:=0;
+for kk from 0 to torder do
+        s := s + A||kk||torder * sin(kk*theta) + B||kk||torder * cos(kk*theta)
+od:
+end;
+
+# Approximation to bJ
+bb := proc(theta,J)  local kk,s;
+s:=0;
+for kk from 0 to Border do
+        s := s + alpha||J||kk||Border * sin(kk*theta) + beta||J||kk||Border * cos(kk*theta)
+od:
+end;
+
+#if torder = 3 then
+#	eps:=0.0001
+#else
+eps:=0.000001;
+#fi;
+
+vf := (si,t) ->   max(eps,evalf(subs({sigma=si}, ff(t)   )));
+
+vb := (si,t,J) ->         evalf(subs({sigma=si}, bb(t,J) ));
+
+# Dstar
+DSS11 := proc(si) local integ;
+2*evalf(Int(vb(si,t,1)*vb(si,t,2) / vf(si,t), t=0..2*evalf(Pi), method = _Gquad )):
+end:
+
+DSS12 := proc(si) local integ;
+evalf(Int(vb(si,t,2)^2 / vf(si,t),t=0..2*evalf(Pi), method = _Gquad )):
+end:
+
+DS11 := (i) -> 'DSS11(i)':
+DS12 := (i) -> 'DSS12(i)':
+
+
+print(`total diffusivity calculation`);
+DSON:=1;   # 0 to turn D* "off", 1 for "on"
+
+D11||Border := Dt11||Border - DSON*sigma*'DS11(sigma)':
+D12||Border := Dt12||Border - DSON*sigma*'DS12(sigma)':
+D22||Border := Dt22||Border:
+
+# Plotting the diffusion tensor
+print(`plot of D11`);
+srange := 10:
+ plot([D11||Border,Dt11||Border],sigma=0.001..srange,legend=[`Full`,`Simple`]); 
+
+print(`plot of D12`);
+ plot([D12||Border,Dt12||Border],sigma=0.001..srange,legend=[`Full`,`Simple`]); 
+ 
+print(`plot of D22`);
+ plot([D22||Border,Dt22||Border],sigma=0..srange,legend=[`Full`,`Simple`]); 
+
+
+print(`eigenvalue calculations`);
+
+T1:=(sqrt( ('Dt11||Border' - 'Dt22||Border')^2 + 4*('Dt12||Border'^2) ))/2:
+T2:=('Dt11||Border'+'Dt22||Border') /2:
+
+print(`plot of eigenvalues for simple problem`);
+plot([T2+T1,T2-T1],sigma=-10..10,-0.05..0.3, title=sprintf("Eigenvalues of D (lambda=%g)",lambda), labels=["s",""], labelfont=[SYMBOL,16],thickness=3,linestyle=[3,1,1], symbol=[CROSS,DIAMOND], style=[LINE,LINE], axesfont=[TIMES,ROMAN,14],symbolsize=[1,1]);
+
+S1:=(sqrt( ('D11||Border' - 'D22||Border')^2 + 4*('D12||Border'^2) ))/2:
+S2:=('D11||Border'+'D22||Border') /2:
+
+print(`plot of eigenvalues for full problem`);
+plot([S2+S1,S2-S1],sigma=-10..10,-0.05..0.3, title=sprintf("Eigenvalues of D (lambda=%g)",lambda), labels=["s",""], labelfont=[SYMBOL,16],thickness=3,linestyle=[3,1,1], symbol=[CROSS,DIAMOND], style=[LINE,LINE], axesfont=[TIMES,ROMAN,14],symbolsize=[1,1]);
+
+
+
+##############
+
+`Plot of distibutions`;
+
+
+`f`;
+plot([vf(0,t),vf(0.5,t),vf(1,t),vf(2,t),vf(3,t),vf(4,t)],t=0..2*evalf(Pi),legend=[`sigma=0`,`0.5`,`1`,`2`,`3`,`4`]);
+
+`b1`;
+plot([vb(0,t,1),vb(0.5,t,1),vb(1,t,1),vb(2,t,1),vb(3,t,1),vb(4,t,1)],t=0..2*evalf(Pi),legend=[`sigma=0`,`0.5`,`1`,`2`,`3`,`4`]);
+
+`b2`;
+plot([vb(0,t,2),vb(0.5,t,2),vb(1,t,2),vb(2,t,2),vb(3,t,2),vb(4,t,2)],t=0..2*evalf(Pi),legend=[`sigma=0`,`0.5`,`1`,`2`,`3`,`4`]);
+
+
+#`sigma = 0`;
+#plot([vf(0,t),vb(0,t,1),vb(0,t,2)],t=0..2*evalf(Pi),legend=[`f`,`B_1`,`B_2`]);
+
+#`sigma = 1`;
+#plot([vf(1,t),vb(1,t,1),vb(1,t,2)],t=0..2*evalf(Pi),legend=[`f`,`B_1`,`B_2`]);
+
+#`sigma = 4`;
+#plot([vf(4,t),vb(4,t,1),vb(4,t,2)],t=0..2*evalf(Pi),legend=[`f`,`B_1`,`B_2`]);
+
+`END`;
+
+###############
+
+`CHECKS`;
+
+l2 := lambda/2;
+
+`alpha_2 coef: c1=alpha21=D22/pi, c2=alpha22, c3=alpha23`;
+testeqn := {-l2*c2 - c1 + (1/2)*(2*subs(sigma=0,B05) - subs(sigma=0,B25)), 2*(-l2*c3 + l2*c1 - 2*c2) + (1/2)*(subs(sigma=0,B15) - subs(sigma=0,B35)), 3*(l2*c2 - 3*c3) + (1/2)*(subs(sigma=0,B25) - subs(sigma=0,B45))};
+testparlist := {c1,c2,c3};
+
+sols:=solve(testeqn,testparlist);
+D22 := evalf(Pi*subs(sols,c1));
+
+############
+`beta_1 coef: d1=beta11=-D11/pi, d2=beta12, d3=beta13`;
+testeqn2 := {-l2*d2 - d1 + Pi*subs(sigma=0,B15)*subs(sigma=0,B15) - (1/2)*(2*subs(sigma=0,B05) + subs(sigma=0,B25)), 2*(-l2*d3 + l2*d1 - 2*d2) + Pi*subs(sigma=0,B15)*subs(sigma=0,B25) - (1/2)*(subs(sigma=0,B15) + subs(sigma=0,B35)), 3*(l2*d2 - 3*d3) + Pi*subs(sigma=0,B15)*subs(sigma=0,B35) - (1/2)*(subs(sigma=0,B25) + subs(sigma=0,B45))};
+testparlist2 := {d1,d2,d3};
+
+sols:=solve(testeqn2,testparlist2);
+D11 := -evalf(Pi*subs(sols,d1));
+
+##############
+# Another check
+
+`MORE CHECKS`;
+
+`q_x value at sigma=0, two ways`;
+bbb := evalf(subs([sigma=0,lambda=la],-Pi*B1||torder));
+with(MTM):
+II := -evalf(evalf(besseli(1, lambda))/evalf(besseli(0, lambda)));
+ 
+
+`b2`;
+I0 := evalf(besseli(0,lambda));
+cexp := ttt -> exp(lambda*cos(ttt));
+icexp := ttt -> exp(-lambda*cos(ttt));
+inticexp := theta -> evalf(int(icexp(ttt),ttt = 0..theta));
+#plot(inticexp(t),t=0..2*evalf(Pi),0..20);
+invI0 := evalf(1/I0);
+coef := evalf((1/(2*Pi*lambda*I0)));
+
+b2:= th -> evalf(cexp(th)*coef*(  th - invI0*inticexp(th) ));
+`Comparing b_2 for sigma=0 between direct calculation and series solution`;
+plot([b2(t),vb(0,t,2)],t=0..2*evalf(Pi),legend=[`direct`,`series`]);
+
+A:= -(1/(2*Pi*I0))*int( b2(t),   t=0..2*evalf(Pi));
+A:=0;
+
+b2p:= th -> evalf(A*cexp(th) + b2(th)*sin(th));
+plot(b2p(t),t=0..2*evalf(Pi),-0.1..0.1);
+
+`Direct for sigma=0`;
+Ddirect22 := evalf(int(b2p(t),   t=0..2*evalf(Pi)));
+`From series for sigma=0`;
+Dseries22 := evalf(int( vb(0,t,2)*sin(t),   t=0..2*evalf(Pi)));
+
+
+`b1`;
+I1 := evalf(besseli(1,lambda));
+coef2 := evalf((1/(2*Pi*I0)));
+
+F := theta -> evalf(int(coef2*cexp(ttt)*(cos(ttt)-I1/I0),ttt = 0..theta));
+G := -int( icexp(t)*F(t),   t=0..2*evalf(Pi)) / inticexp(2*evalf(Pi)) ;
+G:=0;
+
+hh := theta -> evalf(int(icexp(th)*(F(th)+G),th = 0..theta));
+
+
+HN:= int( cexp(t),   t=0..2*evalf(Pi));
+H := - int( cexp(t)*hh(t),   t=0..2*evalf(Pi)) / HN;
+#H:=0;
+
+b1:= th -> evalf(cexp(th)*(hh(th) + H));
+
+`Comparing b_1 for sigma=0 between direct calculation and series solution`;
+plot([b1(t),vb(0,t,1)],t=0..2*evalf(Pi),legend=[`direct`,`series`]);
+
+b1p:= the -> evalf(b1(the)*cos(the));
+plot(b1p(t),t=0..2*evalf(Pi),-0.1..0.1);
+
+`Direct for sigma=0`;
+Ddirect11 := evalf(int(b1p(t),   t=0..2*evalf(Pi)));
+`From series for sigma=0`;
+Dseries11 := evalf(int( vb(0,t,1)*cos(t),   t=0..2*evalf(Pi)));
+
